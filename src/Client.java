@@ -1,32 +1,53 @@
 /**
  * Created by Robot Laptop on 4/24/2018.
  */
+import java.awt.image.BufferedImage;
 import java.io.*;
 import java.net.*;
 import java.awt.*;
 import java.awt.event.*;
+import java.security.PrivateKey;
+import java.security.PublicKey;
+import javax.imageio.ImageIO;
 import javax.swing.*;
-
+import javax.swing.filechooser.FileNameExtensionFilter;
+import javax.swing.text.BadLocationException;
+import javax.swing.text.StyledDocument;
 
 public class Client extends JFrame{
 
     private JTextField userText;//Where user will be typing the stuff.
-    private JTextArea chatWindow;//Where the history will be displayed
+    private JTextPane chatWindow;//Where the history will be displayed
+
+    private JButton imageButton;
+    private String imagePath;
 
     private ObjectOutputStream output;//sends things away. from client to server
     private ObjectInputStream input;
     private String message = "";
     private String serverIP;
+    private String name;
     private Socket connection;
 
+    private Encryptor myEncryptor = new Encryptor();
+
+    private PublicKey myPublicKey;
+    private PrivateKey myPrivateKey;
+
+    private PublicKey serverPublicKey;
+
     //Constructor
-    public Client(String host){//feed into it the IP of what we want to talk to.
-        super("Instant Messenger - Client");
-        serverIP = host;
+    public Client(){//feed into it the IP of what we want to talk to.
+        super("IM_Client");
+
+        myPublicKey = myEncryptor.getPublicKey();
+        myPrivateKey = myEncryptor.getPrivateKey();
+
+        getUserInfo();
 
         //place user input text box at bottom of screen
         userText = new JTextField("Please type in your message here, and then press \"Enter\" to send message.");
-        userText.setEditable(true);
+        userText.setEditable(false);
         userText.addActionListener(
                 e -> {
                     sendMessage(e.getActionCommand());
@@ -36,13 +57,36 @@ public class Client extends JFrame{
         add(userText,BorderLayout.SOUTH);
 
         //place chat box that at the top of the screen
-        chatWindow = new JTextArea();
+        chatWindow = new JTextPane();
         add(new JScrollPane(chatWindow),BorderLayout.CENTER);
         setSize(300,150);
         setVisible(true);
-        chatWindow.setLineWrap(true);
         chatWindow.setEditable(false);
-        chatWindow.setBackground(Color.CYAN);
+
+        //place add-image button
+        imageButton = new JButton();
+        setVisible(true);
+        imageButton.setEnabled(false);
+        imageButton.addActionListener
+                (
+                        new ActionListener() {
+                            public void actionPerformed(ActionEvent e) {
+                                openImageDialog();
+
+                                BufferedImage img;
+                                try {
+                                    img = ImageIO.read(new File(imagePath));
+                                } catch (IOException ioe) {
+                                    return;
+                                }
+
+                                ImageIcon icon = new ImageIcon(img);
+//                            ChatWindow.insertIcon(icon);
+                                sendIcon(icon);
+                            }
+                        }
+                );
+        add(imageButton, BorderLayout.EAST);
     }
 
     //connects to the server here.
@@ -60,7 +104,7 @@ public class Client extends JFrame{
         }
     }
 
-    //This is what handles connecting to the server.
+    //THis is what handles connecting to the server.
     private void connectToTheServer()throws IOException{
         showMessage("Attempting to connect to the server...\n");
         connection = new Socket(InetAddress.getByName(serverIP),6789);
@@ -73,43 +117,59 @@ public class Client extends JFrame{
         output = new ObjectOutputStream(connection.getOutputStream());
         output.flush();
         input = new ObjectInputStream(connection.getInputStream());
+        exchangeKeys();
         showMessage("\nIn and out streams are connected.\n");
     }
 
     //this runs while the user is chatting
     private void whileChatting() throws IOException{
         ableToType(true);
-        do{
-            try{
-                message = (String) input.readObject();
+        do {
+            try {
+                message = myEncryptor.getDecryptedMessage((byte[]) input.readObject());
                 showMessage("\n" + message);
-            }catch (ClassNotFoundException classNotFoundException){
+            } catch (ClassNotFoundException classNotFoundException){
                 showMessage("\n Unknown Object Type.");
             }
-        }while(!message.equals("SERVER - END"));
+        } while(!message.equals("SERVER - END"));
     }
 
     //Displays messages in the history window
     private void showMessage(final String payload){
         SwingUtilities.invokeLater(
-                () -> chatWindow.append(payload)
+                () -> appendString(payload)
         );
     }
 
     //this will handle sending messages to the server.
     private void sendMessage(String payload){
-        try{
-            output.writeObject("Client - " + payload);
+        try {
+            output.writeObject(myEncryptor.encryptString(name + " - " + payload, serverPublicKey));
             output.flush();
-            showMessage("\nClient - "+ payload);
-        }catch (IOException ioException){
-            chatWindow.append("\n An error has occurred while attempting to send a message.");
+            showMessage("\n" + name + " - "+ payload);
+        } catch (IOException ioException){
+            appendString("\n An error has occured while send a message");
         }
+    }
+
+    private void sendIcon(ImageIcon icon) {
+        try {
+            showMessage("\n"+name+" ");
+            showIcon(icon);
+        } catch (Exception e){
+            appendString("\n ERROR: IMAGE UNABLE TO BE SENT");
+        }
+    }
+
+    private void showIcon(final ImageIcon icon) {
+        SwingUtilities.invokeLater(
+                () -> chatWindow.insertIcon(icon)
+        );
+
     }
 
     //Allows use to type messages in the text area
     private void ableToType(final boolean bool){
-        //make user input text-field able to be used
         SwingUtilities.invokeLater(
                 () -> userText.setEditable(bool)
         );
@@ -128,4 +188,51 @@ public class Client extends JFrame{
         }
     }
 
+    private void getUserInfo() {
+        name = JOptionPane.showInputDialog("Enter your screen name:");
+        serverIP = JOptionPane.showInputDialog("Enter IP address of the server:");
+    }
+
+    private void exchangeKeys() throws IOException{
+        output.writeObject(myPublicKey);
+
+        Object o;
+        try {
+            o = input.readObject();
+        }
+        catch (ClassNotFoundException e) {
+            return;
+        }
+
+        if (o instanceof PublicKey) {
+            serverPublicKey = (PublicKey)o;
+        }
+    }
+
+    private void appendString(String str) {
+        StyledDocument doc = (StyledDocument) chatWindow.getDocument();
+        try {
+            doc.insertString(doc.getLength(), str, null);
+        } catch (BadLocationException e) {
+            // uh oh.
+        }
+    }
+
+    private void openImageDialog() {
+        JFrame frame = new JFrame();
+        JFileChooser chooser = new JFileChooser();
+        FileNameExtensionFilter filter = new FileNameExtensionFilter(
+                "JPG, JPEG, & PNG images", "jpg", "jpeg", "png");
+        chooser.setFileFilter(filter);
+
+        int returnVal = chooser.showOpenDialog(frame);
+        if (returnVal == JFileChooser.APPROVE_OPTION) {
+            System.out.println("You chose to open this file: " + chooser.getSelectedFile().getName());
+
+            imagePath = chooser.getSelectedFile().getPath();
+
+        } else if (returnVal == JFileChooser.CANCEL_OPTION) {
+            return;
+        }
+    }
 }
