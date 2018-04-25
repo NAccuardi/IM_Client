@@ -93,7 +93,9 @@ public class Encryptor {
 
         ByteArrayInputStream bais = new ByteArrayInputStream(decryptedImageBytes);
         try {
-            return ImageIO.read(bais);
+            BufferedImage image = ImageIO.read(bais);
+            bais.close();
+            return image;
         }
         catch (IOException e) {
             return null;
@@ -139,7 +141,6 @@ public class Encryptor {
         byte[] imageBytes;
         try {
             ImageIO.write(image, imageExtension, baos);
-            baos.flush();
             imageBytes = baos.toByteArray();
             baos.close();
         }

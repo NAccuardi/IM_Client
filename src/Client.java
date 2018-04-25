@@ -20,7 +20,6 @@ public class Client extends JFrame{
     private JTextPane chatWindow;//Where the history will be displayed
 
     private JButton imageButton;
-    private String imagePath;
 
     private ObjectOutputStream output;//sends things away. from client to server
     private ObjectInputStream input;
@@ -69,28 +68,25 @@ public class Client extends JFrame{
         imageButton.setEnabled(false);
         imageButton.addActionListener
                 (
-                        new ActionListener() {
-                            public void actionPerformed(ActionEvent e) {
-                                String imagePath = openImageDialog();
+                        e -> {
+                            String imagePath = openImageDialog();
 
-                                int i = imagePath.lastIndexOf(".");
-                                String imageExtension = imagePath.substring(i+1);
-
-
-                                BufferedImage bufferedImg;
-                                try {
-                                    bufferedImg = ImageIO.read(new File(imagePath));
-                                } catch (IOException ioe) {
-                                    return;
-                                }
-
-                                ImageIcon icon = new ImageIcon(bufferedImg);
-//                            ChatWindow.insertIcon(icon);
-                                sendImage(bufferedImg, imageExtension, icon);
+                            int i = imagePath.lastIndexOf(".");
+                            String imageExtension = imagePath.substring(i+1);
 
 
-
+                            BufferedImage bufferedImg;
+                            try {
+                                bufferedImg = ImageIO.read(new File(imagePath));
+                            } catch (IOException ioe) {
+                                return;
                             }
+
+                            ImageIcon icon = new ImageIcon(bufferedImg);
+                            sendImage(bufferedImg, imageExtension, icon);
+
+
+
                         }
                 );
         add(imageButton, BorderLayout.EAST);
@@ -134,10 +130,10 @@ public class Client extends JFrame{
         do {
             try {
                 boolean isImage = input.readBoolean();
-                BufferedImage image;
+                ImageIcon image;
                 if (isImage) {
-                    image = myEncryptor.getDecryptedImageIcon((byte[])input.readObject());
-                    showIcon(new ImageIcon(image));
+                    image = (ImageIcon)input.readObject();
+                    showIcon(image);
                 }
                 else{
                     message = myEncryptor.getDecryptedMessage((byte[]) input.readObject());
@@ -171,7 +167,7 @@ public class Client extends JFrame{
     private void sendImage(BufferedImage img, String imgPathExtension, ImageIcon icon) {
         try {
             output.writeBoolean(true);
-            output.writeObject(myEncryptor.encryptImage(img, imgPathExtension, serverPublicKey));
+            output.writeObject(icon);
             output.flush();
 
             showMessage("\n"+name+" ");
