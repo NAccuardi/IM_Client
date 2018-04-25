@@ -179,9 +179,15 @@ public class Client extends JFrame{
 
     private void showIcon(final ImageIcon icon) {
         SwingUtilities.invokeLater(
-                () -> chatWindow.insertIcon(icon)
+                () -> chatWindow.insertIcon(getScaledIcon(icon))
         );
+    }
 
+    private ImageIcon getScaledIcon(ImageIcon icon) {
+        double scaleFactor = 200.0 / (float)icon.getIconHeight();
+        int width = (int)(scaleFactor * icon.getIconWidth());
+        Image scaledImage = icon.getImage().getScaledInstance(width, 200, Image.SCALE_SMOOTH);
+        return new ImageIcon(scaledImage);
     }
 
     //Allows use to type messages in the text area
