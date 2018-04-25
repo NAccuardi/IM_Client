@@ -34,6 +34,7 @@ public class Client extends JFrame{
     private PrivateKey myPrivateKey;
 
     private PublicKey serverPublicKey;
+    private String serverName;
 
     //Constructor
     public Client(){//feed into it the IP of what we want to talk to.
@@ -58,7 +59,7 @@ public class Client extends JFrame{
         //place chat box that at the top of the screen
         chatWindow = new JTextPane();
         add(new JScrollPane(chatWindow),BorderLayout.CENTER);
-        setSize(300,150);
+        setSize(500,500);
         setVisible(true);
         chatWindow.setEditable(false);
 
@@ -84,9 +85,6 @@ public class Client extends JFrame{
 
                             ImageIcon icon = new ImageIcon(bufferedImg);
                             sendImage(bufferedImg, imageExtension, icon);
-
-
-
                         }
                 );
         add(imageButton, BorderLayout.EAST);
@@ -111,8 +109,17 @@ public class Client extends JFrame{
     private void connectToTheServer()throws IOException{
         showMessage("Attempting to connect to the server...\n");
         connection = new Socket(InetAddress.getByName(serverIP),6789);
-        showMessage("Connected to: "+connection.getInetAddress().getHostName());
 
+//        output.write(name.getBytes());
+//        try {
+//            serverName = (String)input.readObject();
+//        }
+//        catch (ClassNotFoundException e) {
+//            System.out.println(e.getStackTrace());
+//        }
+
+
+        showMessage("\nConnected to: " + connection.getInetAddress().getHostName());
     }
 
     //Sets up the paths for the payloads to follow
@@ -133,6 +140,7 @@ public class Client extends JFrame{
                 ImageIcon image;
                 if (isImage) {
                     image = (ImageIcon)input.readObject();
+                    showMessage("\n" + serverName + " - ");
                     showIcon(image);
                 }
                 else{
