@@ -26,7 +26,7 @@ public class Client extends JFrame{
 
         //place user input text box at bottom of screen
         userText = new JTextField("Please type in your message here, and then press \"Enter\" to send message.");
-        userText.setEditable(false);
+        userText.setEditable(true);
         userText.addActionListener(
                 e -> {
                     sendMessage(e.getActionCommand());
@@ -40,7 +40,9 @@ public class Client extends JFrame{
         add(new JScrollPane(chatWindow),BorderLayout.CENTER);
         setSize(300,150);
         setVisible(true);
+        chatWindow.setLineWrap(true);
         chatWindow.setEditable(false);
+        chatWindow.setBackground(Color.CYAN);
     }
 
     //connects to the server here.
