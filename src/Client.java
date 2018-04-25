@@ -7,10 +7,12 @@ import java.awt.*;
 import java.awt.event.*;
 import javax.swing.*;
 
+
 public class Client extends JFrame{
 
     private JTextField userText;//Where user will be typing the stuff.
     private JTextArea chatWindow;//Where the history will be displayed
+
     private ObjectOutputStream output;//sends things away. from client to server
     private ObjectInputStream input;
     private String message = "";
@@ -19,9 +21,11 @@ public class Client extends JFrame{
 
     //Constructor
     public Client(String host){//feed into it the IP of what we want to talk to.
-        super("IM_Client");
+        super("Instant Messenger - Client");
         serverIP = host;
-        userText = new JTextField();
+
+        //place user input text box at bottom of screen
+        userText = new JTextField("Please type in your message here, and then press \"Enter\" to send message.");
         userText.setEditable(false);
         userText.addActionListener(
                 e -> {
@@ -29,7 +33,9 @@ public class Client extends JFrame{
                     userText.setText("");
                 }
         );
-        add(userText,BorderLayout.NORTH);
+        add(userText,BorderLayout.SOUTH);
+
+        //place chat box that at the top of the screen
         chatWindow = new JTextArea();
         add(new JScrollPane(chatWindow),BorderLayout.CENTER);
         setSize(300,150);
@@ -52,7 +58,7 @@ public class Client extends JFrame{
         }
     }
 
-    //THis is what handles connecting to the server.
+    //This is what handles connecting to the server.
     private void connectToTheServer()throws IOException{
         showMessage("Attempting to connect to the server...\n");
         connection = new Socket(InetAddress.getByName(serverIP),6789);
@@ -95,20 +101,21 @@ public class Client extends JFrame{
             output.flush();
             showMessage("\nClient - "+ payload);
         }catch (IOException ioException){
-            chatWindow.append("\n An error has occured while send a message");
+            chatWindow.append("\n An error has occurred while attempting to send a message.");
         }
     }
 
-    //Allows use to type messesges in the text area
+    //Allows use to type messages in the text area
     private void ableToType(final boolean bool){
+        //make user input text-field able to be used
         SwingUtilities.invokeLater(
                 () -> userText.setEditable(bool)
         );
     }
 
-    //closes the rogram down at the end.
+    //closes the program down at the end.
     private void shutEverythingDown(){
-        showMessage("\n Closeing the program down.");
+        showMessage("\n Closing the program down.");
         ableToType(false);
         try{
             output.close();
