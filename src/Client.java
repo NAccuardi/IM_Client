@@ -170,7 +170,7 @@ public class Client extends JFrame{
             output.writeObject(icon);
             output.flush();
 
-            showMessage("\n"+name+" ");
+            showMessage("\n"+name+" - ");
             showIcon(icon);
         } catch (Exception e){
             appendString("\n ERROR: IMAGE UNABLE TO BE SENT");
