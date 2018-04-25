@@ -5,6 +5,8 @@ import java.io.*;
 import java.net.*;
 import java.awt.*;
 import java.awt.event.*;
+import java.security.PrivateKey;
+import java.security.PublicKey;
 import javax.swing.*;
 
 public class Client extends JFrame{
@@ -15,12 +17,24 @@ public class Client extends JFrame{
     private ObjectInputStream input;
     private String message = "";
     private String serverIP;
+    private String name;
     private Socket connection;
 
+    private Encryptor myEncryptor = new Encryptor();
+
+    private PublicKey myPublicKey;
+    private PrivateKey myPrivateKey;
+
+    private PublicKey serverPublicKey;
+
     //Constructor
-    public Client(String host){//feed into it the IP of what we want to talk to.
+    public Client(){//feed into it the IP of what we want to talk to.
         super("IM_Client");
-        serverIP = host;
+
+        myPublicKey = myEncryptor.getPublicKey();
+        myPrivateKey = myEncryptor.getPrivateKey();
+
+        getUserInfo();
         userText = new JTextField();
         userText.setEditable(false);
         userText.addActionListener(
@@ -65,20 +79,21 @@ public class Client extends JFrame{
         output = new ObjectOutputStream(connection.getOutputStream());
         output.flush();
         input = new ObjectInputStream(connection.getInputStream());
+        exchangeKeys();
         showMessage("\nIn and out streams are connected.\n");
     }
 
     //this runs while the user is chatting
     private void whileChatting() throws IOException{
         ableToType(true);
-        do{
-            try{
-                message = (String) input.readObject();
+        do {
+            try {
+                message = myEncryptor.getDecryptedMessage((byte[]) input.readObject());
                 showMessage("\n" + message);
-            }catch (ClassNotFoundException classNotFoundException){
+            } catch (ClassNotFoundException classNotFoundException){
                 showMessage("\n Unknown Object Type.");
             }
-        }while(!message.equals("SERVER - END"));
+        } while(!message.equals("SERVER - END"));
     }
 
     //Displays messages in the history window
@@ -90,11 +105,11 @@ public class Client extends JFrame{
 
     //this will handle sending messages to the server.
     private void sendMessage(String payload){
-        try{
-            output.writeObject("Client - " + payload);
+        try {
+            output.writeObject(myEncryptor.encryptString(name + " - " + payload, serverPublicKey));
             output.flush();
-            showMessage("\nClient - "+ payload);
-        }catch (IOException ioException){
+            showMessage("\n" + name + " - "+ payload);
+        } catch (IOException ioException){
             chatWindow.append("\n An error has occured while send a message");
         }
     }
@@ -108,7 +123,7 @@ public class Client extends JFrame{
 
     //closes the rogram down at the end.
     private void shutEverythingDown(){
-        showMessage("\n Closeing the program down.");
+        showMessage("\n Closing the program down.");
         ableToType(false);
         try{
             output.close();
@@ -119,4 +134,24 @@ public class Client extends JFrame{
         }
     }
 
+    private void getUserInfo() {
+        name = JOptionPane.showInputDialog("Enter your screen name:");
+        serverIP = JOptionPane.showInputDialog("Enter IP address of the server:");
+    }
+
+    private void exchangeKeys() throws IOException{
+        output.writeObject(myPublicKey);
+
+        Object o;
+        try {
+            o = input.readObject();
+        }
+        catch (ClassNotFoundException e) {
+            return;
+        }
+
+        if (o instanceof PublicKey) {
+            serverPublicKey = (PublicKey)o;
+        }
+    }
 }
