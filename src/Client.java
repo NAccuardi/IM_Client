@@ -35,7 +35,9 @@ public class Client extends JFrame{
         myPrivateKey = myEncryptor.getPrivateKey();
 
         getUserInfo();
-        userText = new JTextField();
+
+        //place user input text box at bottom of screen
+        userText = new JTextField("Please type in your message here, and then press \"Enter\" to send message.");
         userText.setEditable(false);
         userText.addActionListener(
                 e -> {
@@ -43,12 +45,16 @@ public class Client extends JFrame{
                     userText.setText("");
                 }
         );
-        add(userText,BorderLayout.NORTH);
+        add(userText,BorderLayout.SOUTH);
+
+        //place chat box that at the top of the screen
         chatWindow = new JTextArea();
         add(new JScrollPane(chatWindow),BorderLayout.CENTER);
         setSize(300,150);
         setVisible(true);
+        chatWindow.setLineWrap(true);
         chatWindow.setEditable(false);
+        chatWindow.setBackground(Color.CYAN);
     }
 
     //connects to the server here.
@@ -114,14 +120,14 @@ public class Client extends JFrame{
         }
     }
 
-    //Allows use to type messesges in the text area
+    //Allows use to type messages in the text area
     private void ableToType(final boolean bool){
         SwingUtilities.invokeLater(
                 () -> userText.setEditable(bool)
         );
     }
 
-    //closes the rogram down at the end.
+    //closes the program down at the end.
     private void shutEverythingDown(){
         showMessage("\n Closing the program down.");
         ableToType(false);
