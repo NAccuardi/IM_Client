@@ -46,7 +46,7 @@ public class Client extends JFrame{
         getUserInfo();
 
         //place user input text box at bottom of screen
-        userText = new JTextField("Please type in your message here, and then press \"Enter\" to send message.");
+        userText = new JTextField();
         userText.setEditable(false);
         userText.addActionListener(
                 e -> {
@@ -171,9 +171,15 @@ public class Client extends JFrame{
     //Allows use to type messages in the text area
     private void ableToType(final boolean bool){
         SwingUtilities.invokeLater(
-                () -> userText.setEditable(bool)
+                () -> setUIEnabled(bool)
         );
     }
+
+    private void setUIEnabled(boolean enabled) {
+        imageButton.setEnabled(enabled);
+        userText.setEditable(enabled);
+    }
+
 
     //closes the program down at the end.
     private void shutEverythingDown(){
