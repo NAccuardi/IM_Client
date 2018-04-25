@@ -133,8 +133,16 @@ public class Client extends JFrame{
         ableToType(true);
         do {
             try {
-                message = myEncryptor.getDecryptedMessage((byte[]) input.readObject());
-                showMessage("\n" + message);
+                boolean isImage = input.readBoolean();
+                BufferedImage image;
+                if (isImage) {
+                    image = myEncryptor.getDecryptedImageIcon((byte[])input.readObject());
+                    showIcon(new ImageIcon(image));
+                }
+                else{
+                    message = myEncryptor.getDecryptedMessage((byte[]) input.readObject());
+                    showMessage("\n" + message);
+                }
             } catch (ClassNotFoundException classNotFoundException){
                 showMessage("\n Unknown Object Type.");
             }
@@ -151,6 +159,7 @@ public class Client extends JFrame{
     //this will handle sending messages to the server.
     private void sendMessage(String payload){
         try {
+            output.writeBoolean(false);
             output.writeObject(myEncryptor.encryptString(name + " - " + payload, serverPublicKey));
             output.flush();
             showMessage("\n" + name + " - "+ payload);
@@ -161,6 +170,7 @@ public class Client extends JFrame{
 
     private void sendImage(BufferedImage img, String imgPathExtension, ImageIcon icon) {
         try {
+            output.writeBoolean(true);
             output.writeObject(myEncryptor.encryptImage(img, imgPathExtension, serverPublicKey));
             output.flush();
 
