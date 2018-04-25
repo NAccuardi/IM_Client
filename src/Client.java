@@ -15,12 +15,13 @@ public class Client extends JFrame{
     private ObjectInputStream input;
     private String message = "";
     private String serverIP;
+    private String name;
     private Socket connection;
 
     //Constructor
-    public Client(String host){//feed into it the IP of what we want to talk to.
+    public Client(){//feed into it the IP of what we want to talk to.
         super("IM_Client");
-        serverIP = host;
+        getUserInfo();
         userText = new JTextField();
         userText.setEditable(false);
         userText.addActionListener(
@@ -91,9 +92,9 @@ public class Client extends JFrame{
     //this will handle sending messages to the server.
     private void sendMessage(String payload){
         try{
-            output.writeObject("Client - " + payload);
+            output.writeObject(name + " - " + payload);
             output.flush();
-            showMessage("\nClient - "+ payload);
+            showMessage("\n" + name + " - "+ payload);
         }catch (IOException ioException){
             chatWindow.append("\n An error has occured while send a message");
         }
@@ -108,7 +109,7 @@ public class Client extends JFrame{
 
     //closes the rogram down at the end.
     private void shutEverythingDown(){
-        showMessage("\n Closeing the program down.");
+        showMessage("\n Closing the program down.");
         ableToType(false);
         try{
             output.close();
@@ -117,6 +118,11 @@ public class Client extends JFrame{
         }catch (IOException ioException){
             ioException.printStackTrace();
         }
+    }
+
+    private void getUserInfo() {
+        name = JOptionPane.showInputDialog("Enter your screen name:");
+        serverIP = JOptionPane.showInputDialog("Enter IP address of the server:");
     }
 
 }
