@@ -34,7 +34,7 @@ public class Client extends JFrame{
     private PrivateKey myPrivateKey;
 
     private PublicKey serverPublicKey;
-    private String serverName;
+    private String serverName = "Server";
 
     //Constructor
     public Client(){//feed into it the IP of what we want to talk to.
@@ -66,6 +66,7 @@ public class Client extends JFrame{
         //place add-image button
         imageButton = new JButton();
         setVisible(true);
+        imageButton.setText("SEND IMAGE");
         imageButton.setEnabled(false);
         imageButton.addActionListener
                 (
@@ -119,6 +120,7 @@ public class Client extends JFrame{
 //        }
 
 
+
         showMessage("\nConnected to: " + connection.getInetAddress().getHostName());
     }
 
@@ -140,6 +142,8 @@ public class Client extends JFrame{
                 ImageIcon image;
                 if (isImage) {
                     image = (ImageIcon)input.readObject();
+
+                    // send Server's message with an image
                     showMessage("\n" + serverName + " - ");
                     showIconOnChatWindow(image);
                 }
