@@ -1,12 +1,6 @@
-/**
- * Created by Robot Laptop on 4/24/2018.
- */
-import java.awt.image.BufferedImage;
 import java.io.*;
 import java.net.*;
 import java.awt.*;
-import java.awt.event.*;
-import java.security.PrivateKey;
 import java.security.PublicKey;
 import javax.imageio.ImageIO;
 import javax.swing.*;
@@ -14,35 +8,40 @@ import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.StyledDocument;
 
+/**
+ * Class: Client
+ * Code for the client to function properly.
+ * @author Nick Accuardi
+ * @author Alex Hadi
+ * @author Mitchell Nguyen
+ * @author Patrick Maloney
+ */
 public class Client extends JFrame{
+    private JTextField userText;  // Where the user types.
+    private JTextPane chatWindow; // Where the history is displayed
+    private JButton imageButton; // Button to send images.
 
-    private JTextField userText;//Where user will be typing the stuff.
-    private JTextPane chatWindow;//Where the history will be displayed
-
-    private JButton imageButton;
-
-    private ObjectOutputStream output;//sends things away. from client to server
+    // Streams to send data to and from the client.
+    private ObjectOutputStream output;
     private ObjectInputStream input;
-    private String message = "";
-    private String serverIP;
+
+    private String message = ""; // The current message.
+    private String serverIP; // The IP address.
     private String name;
-    private Socket connection;
+    private Socket connection; // The Socket for sending data.
+    private Encryptor myEncryptor = new Encryptor(); // For encrypting and decrypting messages.
 
-    private Encryptor myEncryptor = new Encryptor();
-
+    // My PublicKey & the server's PublicKey.
     private PublicKey myPublicKey;
-    private PrivateKey myPrivateKey;
-
     private PublicKey serverPublicKey;
-    private String serverName = "Server";
 
-    //Constructor
+    /**
+     * Constructor: Client
+     * Initializes the Client GUI.
+     */
     public Client(){//feed into it the IP of what we want to talk to.
         super("IM_Client");
-
         myPublicKey = myEncryptor.getPublicKey();
-        myPrivateKey = myEncryptor.getPrivateKey();
-
         getUserInfo();
 
         //place user input text box at bottom of screen
@@ -68,67 +67,66 @@ public class Client extends JFrame{
         setVisible(true);
         imageButton.setText("SEND IMAGE");
         imageButton.setEnabled(false);
-        imageButton.addActionListener
-                (
-                        e -> {
-                            String imagePath = openImageDialog();
-
-                            int i = imagePath.lastIndexOf(".");
-                            String imageExtension = imagePath.substring(i+1);
-
-
-                            BufferedImage bufferedImg;
-                            try {
-                                bufferedImg = ImageIO.read(new File(imagePath));
-                            } catch (IOException ioe) {
-                                return;
-                            }
-
-                            ImageIcon icon = new ImageIcon(bufferedImg);
-                            sendImage(bufferedImg, imageExtension, icon);
-                        }
-                );
+        imageButton.addActionListener(
+                e -> {
+                    String imagePath = openImageDialogAndReturnPath();
+                    if (imagePath == null) return;
+                    try {
+                        sendImage(new ImageIcon(ImageIO.read(new File(imagePath))));
+                    } catch (IOException ioe) {
+                        ioe.printStackTrace();
+                    }
+                }
+        );
         add(imageButton, BorderLayout.EAST);
     }
 
-    //connects to the server here.
+    /**
+     * Method: startRunning
+     * Connects to the server.
+     */
     public void startRunning(){
-        try{
+        try {
             connectToTheServer();
             setUpInAndOutStreams();
             whileChatting();
-        }catch (EOFException eofException){
+        } catch (EOFException eofException){
             showMessage("\n Client Terminated Connection.");
-        }catch (IOException ioException){
+        } catch (IOException ioException){
             ioException.printStackTrace();
-        }finally {
+        } finally {
             shutEverythingDown();
         }
     }
 
-    //THis is what handles connecting to the server.
-    private void connectToTheServer()throws IOException{
+    /**
+     * Method: connectToTheServer
+     * This is what handles connecting to the server.
+     */
+    private void connectToTheServer() {
         showMessage("Attempting to connect to the server...\n");
-        connection = new Socket(InetAddress.getByName(serverIP),6789);
-
-//        output.write(name.getBytes());
-//        try {
-//            serverName = (String)input.readObject();
-//        }
-//        catch (ClassNotFoundException e) {
-//            System.out.println(e.getStackTrace());
-//        }
-
-
-
+        try {
+            connection = new Socket(InetAddress.getByName(serverIP),6789);
+        }
+        catch (IOException e) {
+            e.printStackTrace();
+        }
         showMessage("\nConnected to: " + connection.getInetAddress().getHostName());
     }
 
-    //Sets up the paths for the payloads to follow
-    private void setUpInAndOutStreams()throws IOException{
-        output = new ObjectOutputStream(connection.getOutputStream());
-        output.flush();
-        input = new ObjectInputStream(connection.getInputStream());
+    /**
+     * Method: setUpInAndOutStreams
+     * Sets up the paths for the payloads to follow.
+     */
+    private void setUpInAndOutStreams() {
+        try {
+            output = new ObjectOutputStream(connection.getOutputStream());
+            output.flush();
+            input = new ObjectInputStream(connection.getInputStream());
+        }
+        catch (IOException e) {
+            e.printStackTrace();
+        }
         exchangeKeys();
         showMessage("\nIn and out streams are connected.\n");
     }
@@ -144,7 +142,7 @@ public class Client extends JFrame{
                     image = (ImageIcon)input.readObject();
 
                     // send Server's message with an image
-                    showMessage("\n" + serverName + " - ");
+                    showMessage("\n" + "Server" + " - ");
                     showIconOnChatWindow(image);
                 }
                 else{
@@ -177,7 +175,7 @@ public class Client extends JFrame{
         }
     }
 
-    private void sendImage(BufferedImage img, String imgPathExtension, ImageIcon imageToSend) {
+    private void sendImage(ImageIcon imageToSend) {
         try {
             output.writeBoolean(true);
             output.writeObject(imageToSend);
@@ -234,46 +232,63 @@ public class Client extends JFrame{
         serverIP = JOptionPane.showInputDialog("Enter IP address of the server:");
     }
 
-    private void exchangeKeys() throws IOException{
-        output.writeObject(myPublicKey);
-
-        Object o;
+    /**
+     * Method: exchangeKeys
+     * PublicKeys are exchanged between client and server.
+     */
+    private void exchangeKeys() {
         try {
-            o = input.readObject();
+            // Client writes the key out first.
+            output.writeObject(myPublicKey);
+            Object o = input.readObject();
+            if (o instanceof PublicKey) {
+                serverPublicKey = (PublicKey)o;
+            }
         }
-        catch (ClassNotFoundException e) {
-            return;
-        }
-
-        if (o instanceof PublicKey) {
-            serverPublicKey = (PublicKey)o;
+        catch (ClassNotFoundException | IOException e) {
+            e.printStackTrace();
         }
     }
 
+    /**
+     * Method: appendString
+     * Adds a given string to the chat window
+     * @param str The string to append.
+     */
     private void appendString(String str) {
-        StyledDocument doc = (StyledDocument) chatWindow.getDocument();
+        // Need StyledDocument to insert the string.
+        StyledDocument styledDocument = chatWindow.getStyledDocument();
         try {
-            doc.insertString(doc.getLength(), str, null);
-        } catch (BadLocationException e) {
-            // uh oh.
+            styledDocument.insertString(styledDocument.getLength(), str, null);
+        }
+        catch (BadLocationException e) {
+            e.printStackTrace();
         }
     }
 
-    private String openImageDialog() {
-        JFrame frame = new JFrame();
-        JFileChooser chooser = new JFileChooser();
-        FileNameExtensionFilter filter = new FileNameExtensionFilter(
+    /**
+     * Method: openImageDialogAndReturnPath
+     * Opens a JFileChooser and returns the path to the image.
+     * @return The string that represents the image path.
+     */
+    private String openImageDialogAndReturnPath() {
+        // Frame and file chooser are instantiated.
+        JFrame imageDialogFrame = new JFrame();
+        JFileChooser imageChooser = new JFileChooser();
+
+        // Filter out only images.
+        FileNameExtensionFilter imageFilter = new FileNameExtensionFilter(
                 "JPG, JPEG, & PNG images", "jpg", "jpeg", "png");
-        chooser.setFileFilter(filter);
+        imageChooser.setFileFilter(imageFilter);
 
-        int returnVal = chooser.showOpenDialog(frame);
-        if (returnVal == JFileChooser.APPROVE_OPTION) {
-            System.out.println("You chose to open this file: " + chooser.getSelectedFile().getName());
-
-            return chooser.getSelectedFile().getPath();
-
-        } else if (returnVal == JFileChooser.CANCEL_OPTION) {
-            return null;
+        // Wait for either approval from user or cancel operation.
+        switch (imageChooser.showOpenDialog(imageDialogFrame)) {
+            case JFileChooser.APPROVE_OPTION:
+                System.out.println("This image opened: " + imageChooser.getSelectedFile().getName());
+                return imageChooser.getSelectedFile().getPath();
+            case JFileChooser.CANCEL_OPTION:
+                System.out.println("Open image operation cancelled.");
+                break;
         }
         return null;
     }

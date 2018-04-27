@@ -1,17 +1,7 @@
-//import com.sun.xml.internal.messaging.saaj.util.ByteOutputStream;
-
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
-import javax.imageio.ImageIO;
-import javax.swing.*;
-import java.awt.*;
-import java.awt.image.BufferedImage;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.nio.Buffer;
 import java.security.*;
 
 /**
@@ -19,7 +9,7 @@ import java.security.*;
  * Allows messages to be encrypted and decrypted.
  *
  * @author Alex Hadi
- * @version April 24, 2018
+ * @version April 27, 2018
  */
 public class Encryptor {
     // This client's specific public and private keys.
@@ -67,41 +57,6 @@ public class Encryptor {
         return keyPairGenerator.generateKeyPair();
     }
 
-    public BufferedImage getDecryptedImageIcon(byte[] encryptedImage) {
-        Cipher cipher;
-        try {
-            cipher = Cipher.getInstance(CIPHER);
-        }
-        catch (NoSuchAlgorithmException | NoSuchPaddingException e) {
-            return null;
-        }
-
-        try {
-            cipher.init(Cipher.DECRYPT_MODE, this.privateKey);
-        }
-        catch (InvalidKeyException e) {
-            return null;
-        }
-
-        byte[] decryptedImageBytes;
-        try {
-            decryptedImageBytes = cipher.doFinal(encryptedImage);
-        }
-        catch (IllegalBlockSizeException | BadPaddingException e) {
-            return null;
-        }
-
-        ByteArrayInputStream bais = new ByteArrayInputStream(decryptedImageBytes);
-        try {
-            BufferedImage image = ImageIO.read(bais);
-            bais.close();
-            return image;
-        }
-        catch (IOException e) {
-            return null;
-        }
-    }
-
     /**
      * Method: getDecryptedMessage
      * Retrieves encrypted encryption from the server, decrypts it, and returns as a String.
@@ -136,26 +91,12 @@ public class Encryptor {
         return new String(decryptedMessage);
     }
 
-    public byte[] encryptImage(BufferedImage image, String imageExtension, PublicKey encryptionKey) {
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        byte[] imageBytes;
-        try {
-            ImageIO.write(image, imageExtension, baos);
-            imageBytes = baos.toByteArray();
-            baos.close();
-        }
-        catch (IOException e) {
-            return null;
-        }
-
-        return getEncryptedBytes(imageBytes, encryptionKey);
-    }
-
     /**
      * Method: encryptString
      * Private helper method that encrypts a string and returns it as a byte array.
      *
      * @param message The String that represents the encryption.
+     * @param encryptionKey The PublicKey to encrypt the string with.
      * @return The encrypted string as a byte[].
      */
     public byte[] encryptString(String message, PublicKey encryptionKey) {
@@ -163,6 +104,13 @@ public class Encryptor {
         return getEncryptedBytes(messageBytes, encryptionKey);
     }
 
+    /**
+     * Method: getEncryptedBytes
+     * Returns a byte array representing the encrypted message.
+     * @param bytes The bytes to encrypt.
+     * @param encryptionKey The PublicKey to encrypt with.
+     * @return The byte[] representing the encrypted message.
+     */
     private byte[] getEncryptedBytes(byte[] bytes, PublicKey encryptionKey) {
         Cipher cipher;
         try {
@@ -189,9 +137,5 @@ public class Encryptor {
 
     public PublicKey getPublicKey() {
         return publicKey;
-    }
-
-    public PrivateKey getPrivateKey() {
-        return privateKey;
     }
 }
