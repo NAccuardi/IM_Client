@@ -141,7 +141,7 @@ public class Client extends JFrame{
                 if (isImage) {
                     image = (ImageIcon)input.readObject();
                     showMessage("\n" + serverName + " - ");
-                    showIcon(image);
+                    showIconOnChatWindow(image);
                 }
                 else{
                     message = myEncryptor.getDecryptedMessage((byte[]) input.readObject());
@@ -166,26 +166,27 @@ public class Client extends JFrame{
             output.writeBoolean(false);
             output.writeObject(myEncryptor.encryptString(name + " - " + payload, serverPublicKey));
             output.flush();
+
             showMessage("\n" + name + " - "+ payload);
         } catch (IOException ioException){
-            appendString("\n An error has occured while send a message");
+            appendString("\n An error has occurred while send a message");
         }
     }
 
-    private void sendImage(BufferedImage img, String imgPathExtension, ImageIcon icon) {
+    private void sendImage(BufferedImage img, String imgPathExtension, ImageIcon imageToSend) {
         try {
             output.writeBoolean(true);
-            output.writeObject(icon);
+            output.writeObject(imageToSend);
             output.flush();
 
             showMessage("\n"+name+" - ");
-            showIcon(icon);
+            showIconOnChatWindow(imageToSend);
         } catch (Exception e){
             appendString("\n ERROR: IMAGE UNABLE TO BE SENT");
         }
     }
 
-    private void showIcon(final ImageIcon icon) {
+    private void showIconOnChatWindow(final ImageIcon icon) {
         SwingUtilities.invokeLater(
                 () -> chatWindow.insertIcon(getScaledIcon(icon))
         );
