@@ -9,7 +9,7 @@ import java.security.*;
  * Allows messages to be encrypted and decrypted.
  *
  * @author Alex Hadi
- * @version April 24, 2018
+ * @version April 27, 2018
  */
 public class Encryptor {
     // This client's specific public and private keys.
@@ -96,11 +96,22 @@ public class Encryptor {
      * Private helper method that encrypts a string and returns it as a byte array.
      *
      * @param message The String that represents the encryption.
+     * @param encryptionKey The PublicKey to encrypt the string with.
      * @return The encrypted string as a byte[].
      */
     public byte[] encryptString(String message, PublicKey encryptionKey) {
         byte[] messageBytes = message.getBytes();
+        return getEncryptedBytes(messageBytes, encryptionKey);
+    }
 
+    /**
+     * Method: getEncryptedBytes
+     * Returns a byte array representing the encrypted message.
+     * @param bytes The bytes to encrypt.
+     * @param encryptionKey The PublicKey to encrypt with.
+     * @return The byte[] representing the encrypted message.
+     */
+    private byte[] getEncryptedBytes(byte[] bytes, PublicKey encryptionKey) {
         Cipher cipher;
         try {
             cipher = Cipher.getInstance(CIPHER);
@@ -115,9 +126,9 @@ public class Encryptor {
         catch (InvalidKeyException e) {
             return null;
         }
-        
+
         try {
-            return cipher.doFinal(messageBytes);
+            return cipher.doFinal(bytes);
         }
         catch (IllegalBlockSizeException | BadPaddingException e) {
             return null;
@@ -126,9 +137,5 @@ public class Encryptor {
 
     public PublicKey getPublicKey() {
         return publicKey;
-    }
-
-    public PrivateKey getPrivateKey() {
-        return privateKey;
     }
 }
